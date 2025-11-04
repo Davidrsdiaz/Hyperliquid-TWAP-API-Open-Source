@@ -5,7 +5,25 @@ Open-source data pipeline and API for ingesting and querying Hyperliquid TWAP (T
 **Version**: Production-Ready v2.0  
 **Status**: ✅ 100% Production Complete
 
-> **📋 Recent Improvements**: This codebase is fully production-ready with all features implemented. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details on reliability fixes, error handling, and performance improvements.
+---
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [ETL Usage](#etl-usage)
+- [API Overview](#api-overview)
+- [Database Schema](#database-schema)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [Production Deployment](#production-deployment)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+---
 
 ## Overview
 
@@ -14,6 +32,8 @@ This service:
 1. **Ingests** TWAP data from S3 (`artemis-hyperliquid-data`) in parquet format
 2. **Normalizes** and stores it in PostgreSQL with idempotent, incremental processing
 3. **Exposes** a REST API to query TWAPs by wallet, time range, and TWAP ID
+
+**Perfect for tax platforms (Awaken), DeFi analytics, and traders monitoring TWAP orders.**
 
 ## Features
 
@@ -147,119 +167,51 @@ The API will be available at:
 - **Metrics**: http://localhost:8000/metrics
 - **Health**: http://localhost:8000/healthz
 
-## API Usage
+## API Overview
 
-### Health Check
+> **📖 Full API Documentation**: See **[docs/API.md](docs/API.md)** for complete reference with all endpoints, parameters, and examples.
+
+### Quick Examples
+
+**Health Check:**
 
 ```bash
 curl http://localhost:8000/healthz
 ```
 
-Response:
-```json
-{
-  "status": "healthy",
-  "database": "connected",
-  "last_ingested_object": "local:tests/data/sample_twap.parquet",
-  "last_ingested_at": "2025-11-04T12:00:00Z"
-}
-```
-
-### Query TWAPs by Wallet
+**Query TWAPs by Wallet:**
 
 ```bash
 curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z"
 ```
 
-Response:
-```json
-{
-  "wallet": "0xabc123def456",
-  "start": "2025-11-01T00:00:00Z",
-  "end": "2025-11-04T00:00:00Z",
-  "twaps": [
-    {
-      "twap_id": "123456",
-      "asset": "SOL",
-      "side": "B",
-      "status": "completed",
-      "duration_minutes": 30,
-      "latest_ts": "2025-11-03T12:30:00Z",
-      "executed": {
-        "size": "100.0",
-        "notional": "9050.00"
-      },
-      "raw": { }
-    }
-  ]
-}
-```
-
-### Query with Asset Filter
+**With filters and pagination:**
 
 ```bash
-curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&asset=SOL"
-```
+# Filter by asset
+curl "http://localhost:8000/api/v1/twaps?wallet=0xWALLET&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&asset=SOL"
 
-### Query with Pagination
+# Pagination
+curl "http://localhost:8000/api/v1/twaps?wallet=0xWALLET&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&limit=100&offset=0"
 
-```bash
-# Get first 100 TWAPs
-curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&limit=100&offset=0"
+# Get specific TWAP with full history
+curl http://localhost:8000/api/v1/twaps/TWAP_ID
 
-# Get next 100 TWAPs (page 2)
-curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&limit=100&offset=100"
-```
-
-### Get All Rows for a TWAP
-
-```bash
-curl http://localhost:8000/api/v1/twaps/123456
-```
-
-### Get Prometheus Metrics
-
-```bash
+# Metrics
 curl http://localhost:8000/metrics
 ```
 
-Response:
-```
-# HELP api_requests_total Total number of API requests
-# TYPE api_requests_total counter
-api_requests_total{endpoint="GET /api/v1/twaps"} 42
-api_requests_total{endpoint="GET /healthz"} 15
-# HELP api_request_duration_seconds API request duration
-# TYPE api_request_duration_seconds summary
-api_request_duration_seconds_count{endpoint="GET /api/v1/twaps"} 42
-api_request_duration_seconds_sum{endpoint="GET /api/v1/twaps"} 1.234
-...
-```
+### Available Endpoints
 
-Response:
-```json
-{
-  "twap_id": "123456",
-  "rows": [
-    {
-      "wallet": "0xabc123def456",
-      "ts": "2025-11-03T12:30:00Z",
-      "status": "completed",
-      "size_executed": "100.0",
-      "notional_executed": "9050.00",
-      "raw": { }
-    },
-    {
-      "wallet": "0xabc123def456",
-      "ts": "2025-11-03T12:15:00Z",
-      "status": "executing",
-      "size_executed": "25.8",
-      "notional_executed": "2332.20",
-      "raw": { }
-    }
-  ]
-}
-```
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/twaps` | Query TWAPs by wallet and time range |
+| `GET /api/v1/twaps/{twap_id}` | Get all status updates for a TWAP |
+| `GET /healthz` | Health check with database status |
+| `GET /metrics` | Prometheus metrics |
+| `GET /` | Service information |
+
+**→ See [docs/API.md](docs/API.md) for complete documentation with response schemas, parameters, and client library examples.**
 
 ## Configuration
 
@@ -337,7 +289,37 @@ Process a local parquet file:
 python -m src.etl.run --local-file /path/to/file.parquet
 ```
 
+## Documentation
+
+### User Guides
+
+- **[Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes
+- **[API Reference](docs/API.md)** - Complete REST API documentation with examples
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production setup with systemd, nginx, Docker
+- **[Alembic Migrations](docs/ALEMBIC_GUIDE.md)** - Database schema versioning
+- **[Contributing Guidelines](docs/CONTRIBUTING.md)** - Development workflow and code style
+
+### Implementation Notes
+
+For developers and maintainers:
+
+- **[Improvements Log](docs/implementation/improvements.md)** - All enhancements and fixes
+- **[Code Review](docs/implementation/review-summary.md)** - Architecture assessment  
+- **[Implementation Notes](docs/implementation/implementation-notes.md)** - Feature completion details
+
+### Interactive API Docs
+
+When the API server is running:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+---
+
 ## Production Deployment
+
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for complete production setup guide.
+
+### Quick Production Setup
 
 ### Automated Scheduling with Cron
 
