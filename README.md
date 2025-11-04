@@ -1,4 +1,4 @@
-# Hyperliquid Tax Analytics (HTA-2)
+# Hyperliquid TWAP API - Open Source Tool - Tax Analytics
 
 Production-ready open-source tools for Hyperliquid TWAP data analysis and tax reporting.
 
