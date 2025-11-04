@@ -1,14 +1,17 @@
 """FastAPI application main module."""
 
+import os
 from datetime import datetime
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db.models import ETLIngestLog, TWAPStatus
 from .database import get_db
+from .metrics import metrics, metrics_middleware
 from .models import (
     ExecutedData,
     HealthResponse,
@@ -24,6 +27,27 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# Configure CORS
+# Allow origins can be configured via CORS_ORIGINS environment variable
+# Format: comma-separated list, e.g., "http://localhost:3000,https://app.example.com"
+# Default: Allow all origins (use specific origins in production)
+cors_origins = os.getenv("CORS_ORIGINS", "*")
+if cors_origins == "*":
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [origin.strip() for origin in cors_origins.split(",")]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add metrics middleware
+app.middleware("http")(metrics_middleware)
+
 
 @app.get("/api/v1/twaps", response_model=TWAPsResponse)
 async def get_twaps(
@@ -33,13 +57,19 @@ async def get_twaps(
     asset: Optional[str] = Query(None, description="Filter by asset/coin"),
     latest_per_twap: bool = Query(True, description="Return only latest row per TWAP ID"),
     limit: int = Query(500, ge=1, le=5000, description="Maximum number of TWAPs to return"),
+    offset: int = Query(0, ge=0, description="Offset for pagination (number of TWAPs to skip)"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Query TWAPs by wallet and time range.
+    Query TWAPs by wallet and time range with pagination support.
     
     Returns TWAPs grouped by twap_id. If latest_per_twap=true, returns only
     the most recent row per TWAP ID.
+    
+    Pagination:
+    - Use `limit` to control page size (default 500, max 5000)
+    - Use `offset` to skip TWAPs for pagination (default 0)
+    - Example: offset=0&limit=100 for page 1, offset=100&limit=100 for page 2
     """
     # Build query
     query = select(TWAPStatus).where(
@@ -66,9 +96,16 @@ async def get_twaps(
             twap_groups[row.twap_id] = []
         twap_groups[row.twap_id].append(row)
     
-    # Build response
+    # Build response with pagination
     twaps = []
-    for twap_id, twap_rows in twap_groups.items():
+    twap_ids = list(twap_groups.keys())
+    
+    # Apply offset and limit to twap_ids
+    paginated_twap_ids = twap_ids[offset:offset + limit]
+    
+    for twap_id in paginated_twap_ids:
+        twap_rows = twap_groups[twap_id]
+        
         # If latest_per_twap, use only the first row (already sorted desc by ts)
         if latest_per_twap:
             latest_row = twap_rows[0]
@@ -106,10 +143,6 @@ async def get_twaps(
                 }
             )
             twaps.append(twap_data)
-        
-        # Apply limit
-        if len(twaps) >= limit:
-            break
     
     return TWAPsResponse(
         wallet=wallet,
@@ -209,5 +242,23 @@ async def root():
         "service": "Hyperliquid TWAP Data Service",
         "version": "0.1.0",
         "docs": "/docs",
-        "health": "/healthz"
+        "health": "/healthz",
+        "metrics": "/metrics"
     }
+
+
+@app.get("/metrics")
+async def get_metrics():
+    """
+    Prometheus-style metrics endpoint.
+    
+    Returns metrics in Prometheus text format including:
+    - API request counts and durations by endpoint
+    - ETL run counts and failures
+    - Last ETL run timestamp
+    """
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(
+        content=metrics.get_prometheus_metrics(),
+        media_type="text/plain"
+    )

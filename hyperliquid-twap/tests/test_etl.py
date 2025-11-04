@@ -58,14 +58,14 @@ def test_loader_idempotency(test_db, sample_parquet_path):
 
 def test_ingest_log_tracking(test_db):
     """Test that processed objects are tracked in ingest log."""
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     loader = TWAPLoader()
     
     # Mark object as processed
     loader.mark_object_processed(
         "s3://test/key.parquet",
-        datetime.utcnow(),
+        datetime.now(timezone.utc),
         100
     )
     

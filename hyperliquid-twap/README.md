@@ -2,10 +2,10 @@
 
 Open-source data pipeline and API for ingesting and querying Hyperliquid TWAP (Time-Weighted Average Price) data from the Artemis requester-pays S3 bucket.
 
-**Version**: Production-Ready v1.1  
-**Status**: ✅ All critical improvements applied
+**Version**: Production-Ready v2.0  
+**Status**: ✅ 100% Production Complete
 
-> **📋 Recent Improvements**: This codebase has been enhanced for production-readiness. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details on reliability fixes, error handling, and performance improvements.
+> **📋 Recent Improvements**: This codebase is fully production-ready with all features implemented. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details on reliability fixes, error handling, and performance improvements.
 
 ## Overview
 
@@ -21,10 +21,15 @@ This service:
 - ✅ **Idempotent**: Safe to re-run without duplicates
 - ✅ **Requester-Pays S3**: Handles AWS requester-pays bucket access with retry logic
 - ✅ **FastAPI**: Modern, async REST API with auto-generated docs
+- ✅ **API Pagination**: Offset-based pagination for large result sets
+- ✅ **CORS Support**: Configurable cross-origin resource sharing
+- ✅ **Prometheus Metrics**: Built-in metrics endpoint for monitoring
+- ✅ **Structured Logging**: JSON-formatted logs for production observability
+- ✅ **Alembic Migrations**: Database schema versioning and migrations
 - ✅ **Docker**: Full docker-compose setup for local development
 - ✅ **Type-Safe**: Pydantic models and SQLAlchemy ORM
 - ✅ **Production-Ready**: Enhanced error handling and reliability
-- ✅ **Well-Tested**: Comprehensive test suite with async API tests
+- ✅ **Well-Tested**: Comprehensive test suite including end-to-end integration tests
 
 ## Prerequisites
 
@@ -77,11 +82,25 @@ docker compose logs -f db
 
 ### 4. Initialize Database Schema
 
+You can initialize the database using either method:
+
+**Option A: Using Alembic (Recommended for production)**
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Create tables and indexes
+# Run Alembic migrations
+alembic upgrade head
+```
+
+**Option B: Using schema.sql (Quick start)**
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Create tables and indexes directly
 python -m src.db.init
 ```
 
@@ -125,6 +144,8 @@ The API will be available at:
 - **API**: http://localhost:8000
 - **Docs**: http://localhost:8000/docs
 - **OpenAPI**: http://localhost:8000/openapi.json
+- **Metrics**: http://localhost:8000/metrics
+- **Health**: http://localhost:8000/healthz
 
 ## API Usage
 
@@ -180,10 +201,39 @@ Response:
 curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&asset=SOL"
 ```
 
+### Query with Pagination
+
+```bash
+# Get first 100 TWAPs
+curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&limit=100&offset=0"
+
+# Get next 100 TWAPs (page 2)
+curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T00:00:00Z&end=2025-11-04T00:00:00Z&limit=100&offset=100"
+```
+
 ### Get All Rows for a TWAP
 
 ```bash
 curl http://localhost:8000/api/v1/twaps/123456
+```
+
+### Get Prometheus Metrics
+
+```bash
+curl http://localhost:8000/metrics
+```
+
+Response:
+```
+# HELP api_requests_total Total number of API requests
+# TYPE api_requests_total counter
+api_requests_total{endpoint="GET /api/v1/twaps"} 42
+api_requests_total{endpoint="GET /healthz"} 15
+# HELP api_request_duration_seconds API request duration
+# TYPE api_request_duration_seconds summary
+api_request_duration_seconds_count{endpoint="GET /api/v1/twaps"} 42
+api_request_duration_seconds_sum{endpoint="GET /api/v1/twaps"} 1.234
+...
 ```
 
 Response:
@@ -209,6 +259,48 @@ Response:
     }
   ]
 }
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | (required) | PostgreSQL connection URL |
+| `AWS_REGION` | `us-east-1` | AWS region |
+| `AWS_S3_BUCKET` | `artemis-hyperliquid-data` | S3 bucket name |
+| `AWS_S3_PREFIX` | `raw/twap_statuses/` | S3 prefix for TWAP data |
+| `AWS_REQUEST_PAYER` | `requester` | S3 requester-pays setting |
+| `CORS_ORIGINS` | `*` | Comma-separated list of allowed origins for CORS |
+| `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| `LOG_FORMAT` | `json` | Log format (`json` or `text`) |
+
+### CORS Configuration
+
+Configure allowed origins for cross-origin requests:
+
+```bash
+# Allow all origins (development only)
+export CORS_ORIGINS="*"
+
+# Allow specific origins (production)
+export CORS_ORIGINS="https://app.example.com,https://dashboard.example.com"
+```
+
+### Logging Configuration
+
+Choose between JSON (for log aggregators) or text (for human reading):
+
+```bash
+# JSON logging (production default)
+export LOG_FORMAT="json"
+
+# Human-readable logging (development)
+export LOG_FORMAT="text"
+
+# Set log level
+export LOG_LEVEL="DEBUG"  # or INFO, WARNING, ERROR
 ```
 
 ## ETL Usage

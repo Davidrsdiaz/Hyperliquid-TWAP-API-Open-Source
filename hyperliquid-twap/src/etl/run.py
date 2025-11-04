@@ -2,22 +2,24 @@
 
 import argparse
 import logging
+import os
 import sys
 from datetime import datetime
 from typing import Optional
 
 from dateutil import parser as date_parser
 
+from ..common.logging import setup_structured_logging
 from .config import ETLConfig
 from .loader import TWAPLoader
 from .parser import TWAPParser
 from .s3_client import S3Client
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# Configure structured logging
+use_json_logs = os.getenv("LOG_FORMAT", "json").lower() == "json"
+log_level = os.getenv("LOG_LEVEL", "INFO")
+setup_structured_logging(level=log_level, use_json=use_json_logs)
+
 logger = logging.getLogger(__name__)
 
 
