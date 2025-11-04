@@ -3,6 +3,7 @@
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import psycopg2
 from dotenv import load_dotenv
@@ -28,23 +29,23 @@ def init_db():
     """Initialize the database schema using the SQL file."""
     db_url = get_sync_db_url()
     
-    # Parse connection URL manually for psycopg2
-    # Format: postgresql://user:pass@host:port/dbname
-    if db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "")
-    
-    # Split into components
-    if "@" in db_url:
-        auth, location = db_url.split("@", 1)
-        user, password = auth.split(":", 1) if ":" in auth else (auth, "")
+    # Parse connection URL using urllib for proper handling of special characters
+    try:
+        parsed = urlparse(db_url)
         
-        if "/" in location:
-            hostport, dbname = location.split("/", 1)
-            host, port = hostport.split(":", 1) if ":" in hostport else (hostport, "5432")
-        else:
-            host, port, dbname = location, "5432", "postgres"
-    else:
-        raise ValueError(f"Invalid DATABASE_URL format: {db_url}")
+        if not parsed.scheme.startswith("postgresql"):
+            raise ValueError(f"Invalid database URL scheme: {parsed.scheme}")
+        
+        host = parsed.hostname or "localhost"
+        port = parsed.port or 5432
+        dbname = parsed.path.lstrip("/") or "postgres"
+        user = parsed.username or "postgres"
+        password = parsed.password or ""
+        
+    except Exception as e:
+        print(f"Error parsing DATABASE_URL: {e}")
+        print(f"Expected format: postgresql://user:password@host:port/database")
+        sys.exit(1)
     
     print(f"Connecting to database at {host}:{port}/{dbname}")
     

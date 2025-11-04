@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from .config import ETLConfig
@@ -16,8 +17,18 @@ class S3Client:
     """S3 client wrapper that always uses RequestPayer for requester-pays buckets."""
 
     def __init__(self):
-        """Initialize S3 client."""
-        self.s3 = boto3.client("s3", region_name=ETLConfig.AWS_REGION)
+        """Initialize S3 client with retry configuration."""
+        # Configure retries for transient failures
+        config = Config(
+            retries={
+                'max_attempts': 3,
+                'mode': 'adaptive'  # Use adaptive retry mode for better handling
+            },
+            connect_timeout=5,
+            read_timeout=60
+        )
+        
+        self.s3 = boto3.client("s3", region_name=ETLConfig.AWS_REGION, config=config)
         self.bucket = ETLConfig.AWS_S3_BUCKET
         self.prefix = ETLConfig.AWS_S3_PREFIX
         self.request_payer = ETLConfig.AWS_REQUEST_PAYER

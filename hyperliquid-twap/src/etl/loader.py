@@ -1,13 +1,14 @@
 """Database loader for TWAP data."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import sessionmaker
 
+from ..db.models import ETLIngestLog, TWAPStatus
 from .config import ETLConfig
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class TWAPLoader:
                 batch = records[i:i + batch_size]
                 
                 # Use INSERT ... ON CONFLICT DO NOTHING
-                stmt = insert(text("twap_status")).values(batch)
+                stmt = insert(TWAPStatus.__table__).values(batch)
                 stmt = stmt.on_conflict_do_nothing(
                     index_elements=["twap_id", "wallet", "ts"]
                 )
@@ -96,7 +97,7 @@ class TWAPLoader:
         session = self.Session()
         
         try:
-            stmt = insert(text("etl_s3_ingest_log")).values(
+            stmt = insert(ETLIngestLog.__table__).values(
                 s3_object_key=s3_object_key,
                 last_modified=last_modified,
                 rows_ingested=rows_ingested,
@@ -108,7 +109,7 @@ class TWAPLoader:
                     "last_modified": last_modified,
                     "rows_ingested": rows_ingested,
                     "error_text": error_text,
-                    "ingested_at": datetime.utcnow()
+                    "ingested_at": datetime.now(timezone.utc)
                 }
             )
             

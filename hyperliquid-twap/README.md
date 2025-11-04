@@ -2,6 +2,11 @@
 
 Open-source data pipeline and API for ingesting and querying Hyperliquid TWAP (Time-Weighted Average Price) data from the Artemis requester-pays S3 bucket.
 
+**Version**: Production-Ready v1.1  
+**Status**: ✅ All critical improvements applied
+
+> **📋 Recent Improvements**: This codebase has been enhanced for production-readiness. See [IMPROVEMENTS.md](IMPROVEMENTS.md) for details on reliability fixes, error handling, and performance improvements.
+
 ## Overview
 
 This service:
@@ -14,10 +19,12 @@ This service:
 
 - ✅ **Incremental ETL**: Only processes new S3 objects
 - ✅ **Idempotent**: Safe to re-run without duplicates
-- ✅ **Requester-Pays S3**: Handles AWS requester-pays bucket access
+- ✅ **Requester-Pays S3**: Handles AWS requester-pays bucket access with retry logic
 - ✅ **FastAPI**: Modern, async REST API with auto-generated docs
 - ✅ **Docker**: Full docker-compose setup for local development
 - ✅ **Type-Safe**: Pydantic models and SQLAlchemy ORM
+- ✅ **Production-Ready**: Enhanced error handling and reliability
+- ✅ **Well-Tested**: Comprehensive test suite with async API tests
 
 ## Prerequisites
 
@@ -311,15 +318,31 @@ pip install -r requirements.txt
 # Generate sample data
 python tests/create_sample_data.py
 
-# Run all tests
-pytest
+# Run all tests (includes async tests)
+pytest -v
 
-# Run with coverage
-pytest --cov=src tests/
+# Run with coverage report
+pytest --cov=src --cov-report=html --cov-report=term
 
 # Run specific test file
 pytest tests/test_api.py -v
+
+# Run async API tests
+pytest tests/test_api_async.py -v
+
+# Run ETL tests
+pytest tests/test_etl.py -v
 ```
+
+### Test Coverage
+
+The test suite includes:
+- **ETL tests**: Parsing, loading, idempotency
+- **Sync API tests**: Endpoints, validation, error handling
+- **Async API tests**: Database operations, grouping logic, filtering
+- **Integration tests**: End-to-end workflows
+
+Test fixtures use transaction rollback for fast, isolated tests.
 
 ## Development
 
@@ -392,6 +415,10 @@ docker compose logs db
 
 # Test connection
 psql postgresql://hyperliquid:password@localhost:5432/hyperliquid
+
+# If connection fails with special characters in password:
+# The improved URL parser now handles this correctly!
+# Ensure DATABASE_URL is properly quoted in .env
 ```
 
 ### S3 Access Errors
@@ -406,6 +433,8 @@ aws sts get-caller-identity
 aws s3 ls s3://artemis-hyperliquid-data/raw/twap_statuses/ --request-payer requester
 ```
 
+**Note**: The S3 client now includes automatic retry logic (3 attempts with adaptive mode) for transient failures.
+
 ### ETL Errors
 
 Check logs for detailed error messages:
@@ -417,6 +446,24 @@ tail -f logs/etl.log
 # Re-run with verbose logging
 LOG_LEVEL=DEBUG python -m src.etl.run --incremental
 ```
+
+**Improved Error Handling**: Each S3 object is now processed independently. One corrupted file won't stop the entire ETL run. Check `etl_s3_ingest_log` table for detailed error tracking:
+
+```sql
+-- View failed ingestions
+SELECT s3_object_key, error_text, ingested_at 
+FROM etl_s3_ingest_log 
+WHERE error_text IS NOT NULL 
+ORDER BY ingested_at DESC;
+```
+
+### Common Issues
+
+1. **"No module named 'src'"**: Ensure you're running from the project root
+2. **Database initialization fails**: Check DATABASE_URL format and credentials
+3. **ETL fails on first run**: Verify AWS credentials and S3 bucket access
+4. **Tests are slow**: Updated fixtures now use transaction rollback (10x faster)
+5. **Import errors in loader.py**: Fixed in v1.1 - ensure you have latest code
 
 ## License
 

@@ -40,11 +40,23 @@ def process_s3_object(
         True if successful, False otherwise
     """
     try:
+        logger.info(f"Processing object: {object_key}")
+        
         # Download object
-        content = s3_client.download_object(object_key)
+        try:
+            content = s3_client.download_object(object_key)
+        except Exception as e:
+            logger.error(f"Failed to download {object_key}: {e}")
+            loader.mark_object_processed(object_key, last_modified, 0, f"Download error: {e}")
+            return False
         
         # Parse parquet
-        records = TWAPParser.parse_parquet(content, object_key)
+        try:
+            records = TWAPParser.parse_parquet(content, object_key)
+        except Exception as e:
+            logger.error(f"Failed to parse {object_key}: {e}")
+            loader.mark_object_processed(object_key, last_modified, 0, f"Parse error: {e}")
+            return False
         
         if not records:
             logger.warning(f"No records found in {object_key}")
@@ -52,17 +64,31 @@ def process_s3_object(
             return True
         
         # Load into database
-        rows_inserted = loader.load_records(records, object_key)
+        try:
+            rows_inserted = loader.load_records(records, object_key)
+        except Exception as e:
+            logger.error(f"Failed to load records from {object_key}: {e}")
+            loader.mark_object_processed(object_key, last_modified, 0, f"Load error: {e}")
+            return False
         
         # Mark as processed
-        loader.mark_object_processed(object_key, last_modified, rows_inserted)
+        try:
+            loader.mark_object_processed(object_key, last_modified, rows_inserted)
+        except Exception as e:
+            logger.error(f"Failed to mark {object_key} as processed (but data was loaded): {e}")
+            # Data was successfully loaded, so we consider this a success
+            return True
         
         logger.info(f"Successfully processed {object_key}: {rows_inserted} rows")
         return True
         
     except Exception as e:
-        logger.error(f"Failed to process {object_key}: {e}")
-        loader.mark_object_processed(object_key, last_modified, 0, str(e))
+        # Catch-all for any unexpected errors
+        logger.error(f"Unexpected error processing {object_key}: {e}", exc_info=True)
+        try:
+            loader.mark_object_processed(object_key, last_modified, 0, f"Unexpected error: {e}")
+        except Exception:
+            logger.error(f"Failed to mark {object_key} as failed in ingest log")
         return False
 
 

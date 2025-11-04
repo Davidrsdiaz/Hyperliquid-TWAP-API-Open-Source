@@ -1,6 +1,6 @@
 """SQLAlchemy models for the Hyperliquid TWAP database."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import JSON, Index, Integer, Numeric, Text
@@ -32,7 +32,7 @@ class TWAPStatus(Base):
     s3_object_key: Mapped[str] = mapped_column(Text, nullable=False)
     raw_payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     inserted_at: Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, default=datetime.utcnow, nullable=False
+        TIMESTAMPTZ, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     __table_args__ = (
@@ -52,5 +52,5 @@ class ETLIngestLog(Base):
     rows_ingested: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     error_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ingested_at: Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, default=datetime.utcnow, nullable=False
+        TIMESTAMPTZ, default=lambda: datetime.now(timezone.utc), nullable=False
     )
