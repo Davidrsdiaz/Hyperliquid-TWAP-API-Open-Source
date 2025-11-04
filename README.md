@@ -1,6 +1,6 @@
-# Hyperliquid TWAP API - Open Source Tool - Tax Analytics
+# Hyperliquid TWAP API - Open Source Tool
 
-Production-ready open-source tools for Hyperliquid TWAP data analysis and tax reporting.
+Production-ready open-source tools for Hyperliquid TWAP data and tax analysis.
 
 ---
 
