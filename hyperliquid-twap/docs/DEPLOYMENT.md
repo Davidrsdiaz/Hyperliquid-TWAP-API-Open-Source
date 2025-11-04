@@ -1,6 +1,14 @@
 # Deployment Guide
 
-This guide covers deploying the Hyperliquid TWAP Data Service to production.
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg)](https://www.postgresql.org)
+
+Production deployment guide for the Hyperliquid TWAP Data Service.
+
+**Version**: Production-Ready v2.0
+
+---
 
 ## Architecture Overview
 
@@ -19,11 +27,14 @@ This guide covers deploying the Hyperliquid TWAP Data Service to production.
 
 ## Prerequisites
 
-- Linux server (Ubuntu 20.04+ recommended)
-- Python 3.11+
-- PostgreSQL 14+
-- AWS credentials with S3 access
-- Domain name (optional, for HTTPS)
+- ✅ Linux server (Ubuntu 20.04+ or 22.04 LTS recommended)
+- ✅ Python 3.11+
+- ✅ PostgreSQL 14+
+- ✅ AWS credentials with S3 access
+- ✅ Domain name (optional, for HTTPS)
+- ✅ Root or sudo access
+
+> 💡 **Tip**: See [../README.md#-cost-considerations](../README.md#-cost-considerations) for AWS S3 cost estimates before deploying.
 
 ## Production Setup
 
@@ -76,6 +87,7 @@ python -m src.db.init
 ```bash
 # Create production .env file
 cat > .env << EOF
+# AWS Configuration
 AWS_REGION=us-east-1
 AWS_S3_BUCKET=artemis-hyperliquid-data
 AWS_S3_PREFIX=raw/twap_statuses/
@@ -83,16 +95,24 @@ AWS_REQUEST_PAYER=requester
 AWS_ACCESS_KEY_ID=your_production_key
 AWS_SECRET_ACCESS_KEY=your_production_secret
 
+# Database
 DATABASE_URL=postgresql+asyncpg://hyperliquid:secure_password_here@localhost:5432/hyperliquid
 
+# API Server
 API_HOST=0.0.0.0
 API_PORT=8000
+CORS_ORIGINS=https://yourdomain.com
+
+# Logging
 LOG_LEVEL=INFO
+LOG_FORMAT=json
 EOF
 
 # Secure environment file
 chmod 600 .env
 ```
+
+> 🔒 **Security**: See [Security Best Practices](#security-best-practices) section below for production hardening.
 
 ### 5. Systemd Service (API)
 
@@ -357,6 +377,8 @@ uvicorn src.api.main:app --workers 8
 
 ## Troubleshooting
 
+> 📖 **Comprehensive Guide**: See [../README.md#-troubleshooting](../README.md#-troubleshooting) for detailed troubleshooting with solutions.
+
 ### API Not Starting
 
 ```bash
@@ -433,6 +455,17 @@ sudo -u postgres psql -d hyperliquid -c "REINDEX DATABASE hyperliquid;"
 ## Support
 
 For production issues:
-- Check logs first
-- Review monitoring dashboards
-- Open GitHub issue with logs and error messages
+- **Troubleshooting**: See [../README.md#-troubleshooting](../README.md#-troubleshooting)
+- **Check logs**: `sudo journalctl -u hyperliquid-api -f`
+- **Monitoring**: Review Prometheus metrics at `/metrics` endpoint
+- **GitHub Issues**: Include logs, environment details, and error messages
+
+---
+
+## See Also
+
+- 📖 [Main Documentation](../README.md)
+- 🚀 [Quick Start Guide](../QUICKSTART.md)
+- 📚 [API Reference](API.md)
+- 💰 [Cost Considerations](../README.md#-cost-considerations)
+- 🔧 [Troubleshooting Guide](../README.md#-troubleshooting)

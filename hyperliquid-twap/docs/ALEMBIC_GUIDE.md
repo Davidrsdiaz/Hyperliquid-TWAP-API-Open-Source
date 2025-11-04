@@ -1,6 +1,15 @@
 # Alembic Migration Guide
 
-This guide explains how to use Alembic for database schema management.
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg)](https://www.postgresql.org)
+
+Database schema management with Alembic for the Hyperliquid TWAP Data Service.
+
+**Version**: Production-Ready v2.0
+
+> 📖 **Database Schema**: See [../README.md#-database-schema](../README.md#-database-schema) for table definitions and indexes.
+
+---
 
 ## Quick Start
 
@@ -279,6 +288,34 @@ The application code works with both initialization methods:
 
 - **ETL**: Uses sync SQLAlchemy (works with both)
 - **API**: Uses async SQLAlchemy (works with both)
+
+---
+
+## Troubleshooting
+
+**Migration fails with connection error:**
+```bash
+# Check DATABASE_URL format
+echo $DATABASE_URL
+# Should be: postgresql+asyncpg://user:pass@host:port/dbname
+```
+
+**Can't import models:**
+```bash
+# Ensure you're in project root
+pwd  # Should be: /path/to/hyperliquid-twap
+```
+
+**More help**: See [../README.md#-troubleshooting](../README.md#-troubleshooting)
+
+---
+
+## See Also
+
+- 💾 [Database Schema](../README.md#-database-schema) - Table definitions and indexes
+- 🚀 [Deployment Guide](DEPLOYMENT.md) - Production database setup
+- 📖 [Main Documentation](../README.md)
+- 🔧 [Alembic Docs](https://alembic.sqlalchemy.org) - Official documentation
 - **Tests**: Can use either method for setup
 
 Choose Alembic for production deployments where schema evolution and safety are priorities.

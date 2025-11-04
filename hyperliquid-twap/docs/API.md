@@ -1,6 +1,14 @@
 # API Reference
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg)](https://www.postgresql.org)
+
 Complete REST API documentation for the Hyperliquid TWAP Data Service.
+
+**Version**: Production-Ready v2.0
+
+---
 
 ## Base URL
 
@@ -471,8 +479,22 @@ console.log(`Found ${twaps.twaps.length} TWAPs`);
 
 ---
 
-## Support
+## Performance Considerations
 
-- **Issues**: Open a GitHub issue
-- **Documentation**: See [README.md](../README.md)
-- **Examples**: Check `tests/` directory for usage examples
+> 💰 **Cost Note**: High-volume queries may increase database load. For large date ranges, use pagination. See [../README.md#-cost-considerations](../README.md#-cost-considerations) for optimization tips.
+
+**Query optimization:**
+- Use specific date ranges (avoid full-year queries)
+- Set `latest_per_twap=true` to reduce result size
+- Use pagination (`limit` + `offset`) for results > 1000 records
+- Filter by `asset` when possible
+
+---
+
+## See Also
+
+- 📖 [Main Documentation](../README.md)
+- 🚀 [Quick Start Guide](../QUICKSTART.md)
+- 🔧 [Deployment Guide](DEPLOYMENT.md)
+- 💾 [Database Schema](../README.md#-database-schema)
+- 🔧 [Troubleshooting](../README.md#-troubleshooting)

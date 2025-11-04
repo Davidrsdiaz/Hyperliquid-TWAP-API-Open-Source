@@ -1,6 +1,14 @@
 # Contributing to Hyperliquid TWAP Data Service
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg)](https://www.postgresql.org)
+
 Thank you for your interest in contributing! This document provides guidelines for contributing to this project.
+
+**Version**: Production-Ready v2.0
+
+---
 
 ## Development Setup
 
@@ -100,6 +108,34 @@ def test_feature_name():
 - Open an issue for discussion
 - Check existing documentation
 - Review closed issues for similar questions
+
+## Testing
+
+See [../README.md#-testing](../README.md#-testing) for comprehensive testing guide including:
+- Running tests with pytest
+- Code coverage reports
+- Test fixtures and sample data
+- CI/CD integration
+
+## Troubleshooting Development Issues
+
+For common development issues, see [../README.md#-troubleshooting](../README.md#-troubleshooting).
+
+Quick tips:
+- Database connection issues: Check `DATABASE_URL` format
+- Import errors: Ensure you're in project root
+- Test failures: Run `python tests/create_sample_data.py` first
+
+---
+
+## See Also
+
+- 📖 [Main Documentation](../README.md)
+- 🚀 [Quick Start Guide](../QUICKSTART.md)
+- 📚 [API Reference](API.md)
+- 🔧 [Testing Guide](../README.md#-testing)
+
+---
 
 ## License
 

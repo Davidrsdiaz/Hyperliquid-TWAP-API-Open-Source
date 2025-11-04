@@ -1,12 +1,22 @@
 # Quick Start Guide
 
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688.svg)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-316192.svg)](https://www.postgresql.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 Get the Hyperliquid TWAP Data Service running in 5 minutes.
+
+**Version**: Production-Ready v2.0
+
+---
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
-- Python 3.11+ (for local development)
-- AWS credentials with S3 access (for production S3 ingestion)
+- ✅ Docker and Docker Compose installed
+- ✅ Python 3.11+ (for local development)
+- ✅ PostgreSQL 14+ (or use Docker)
+- ✅ AWS credentials with S3 access (for production S3 ingestion)
 
 ## Option 1: Docker Compose (Recommended)
 
@@ -34,6 +44,13 @@ This starts:
 docker compose exec api python -m src.db.init
 ```
 
+**Expected output:**
+```
+Connecting to database at localhost:5432/hyperliquid
+Creating database schema...
+Database schema initialized successfully!
+```
+
 ### 4. Load Sample Data
 
 ```bash
@@ -56,6 +73,17 @@ curl "http://localhost:8000/api/v1/twaps?wallet=0xabc123def456&start=2025-11-01T
 # View API docs
 open http://localhost:8000/docs
 ```
+
+**Expected response:**
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "last_ingested_object": "local:tests/data/sample_twap.parquet"
+}
+```
+
+🎉 **Success!** Your API is running. See [docs/API.md](docs/API.md) for complete API reference.
 
 ## Option 2: Local Development
 
@@ -189,6 +217,8 @@ Should return 2 TWAPs (IDs: 123456 and 789012).
 
 ### Ingest Production Data from S3
 
+> ⚠️ **Cost Note**: S3 bucket is requester-pays. See [README.md#cost-considerations](README.md#-cost-considerations) for cost estimates and optimization tips.
+
 1. **Configure AWS Credentials** in `.env`:
    ```env
    AWS_ACCESS_KEY_ID=your_key
@@ -219,7 +249,7 @@ Add line:
 
 ### Deploy to Production
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for:
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
 - Systemd service setup
 - Nginx reverse proxy
 - HTTPS with Let's Encrypt
@@ -328,15 +358,30 @@ Visit http://localhost:8000/docs for:
 
 ## Resources
 
+### Documentation
 - [README.md](README.md) - Full documentation
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Production deployment guide
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Development guidelines
-- API Docs: http://localhost:8000/docs
-- Health Check: http://localhost:8000/healthz
+- [docs/API.md](docs/API.md) - Complete API reference
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Production deployment guide
+- [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) - Development guidelines
+- [docs/ALEMBIC_GUIDE.md](docs/ALEMBIC_GUIDE.md) - Database migrations
+
+### API Endpoints
+- **Interactive Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/healthz
+- **Metrics**: http://localhost:8000/metrics
 
 ## Getting Help
 
-- Check logs first: `docker compose logs -f`
-- Review documentation in README.md
-- Open GitHub issue with error messages
-- Include relevant logs and environment details
+- **Troubleshooting**: See [README.md#troubleshooting](README.md#-troubleshooting)
+- **Check logs**: `docker compose logs -f`
+- **Common issues**: Review [README.md#troubleshooting](README.md#-troubleshooting) section
+- **Open issue**: Include error messages, logs, and environment details
+
+---
+
+## See Also
+
+- 📖 [Complete API Documentation](docs/API.md)
+- 🚀 [Production Deployment Guide](docs/DEPLOYMENT.md)
+- 💰 [Cost Considerations](README.md#-cost-considerations)
+- 🔧 [Troubleshooting Guide](README.md#-troubleshooting)
