@@ -1,0 +1,2 @@
+# Sample data directory
+# Run: python tests/create_sample_data.py to generate sample parquet
